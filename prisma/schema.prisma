@@ -1,0 +1,149 @@
+// NOAH — database schema (FR-01 accounts, FR-04 tasks, FR-07 audit, FR-11 memory, FR-12 reminders)
+// Local dev uses SQLite. For production (Vercel Postgres), change the provider
+// to "postgresql" in this file and run `npx prisma migrate deploy` — see DEPLOY.md.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String             @id @default(cuid())
+  email                String             @unique
+  name                 String?
+  passwordHash         String?
+  googleId             String?            @unique
+  emailVerified        DateTime?
+  // Bumped on password reset / "log out all devices" — invalidates all JWTs (FR-01).
+  tokenVersion         Int                @default(0)
+  // Account lockout: 5 failed logins -> locked for 15 minutes (FR-01 dropped item, restored).
+  failedLoginAttempts  Int                @default(0)
+  lockedUntil          DateTime?
+  // 7-day soft delete (FR-01 dropped item, restored).
+  deletedAt            DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  verificationTokens   VerificationToken[]
+  connectedAccounts    ConnectedAccount[]
+  conversations        Conversation[]
+  tasks                Task[]
+  memory               MemoryEntry[]
+  reminders            Reminder[]
+  auditLogs            AuditLog[]
+  settings             UserSettings?
+}
+
+model VerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  type      String // "email_verify" | "password_reset"
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model ConnectedAccount {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider        String    @default("google")
+  providerEmail   String
+  // Space-separated Google OAuth scopes granted for this account.
+  scopes          String
+  // OAuth tokens, AES-256-GCM encrypted with ENCRYPTION_KEY. Never stored in plain text.
+  accessTokenEnc  String
+  refreshTokenEnc String?
+  tokenExpiry     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([userId, provider, providerEmail])
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String    @default("New conversation")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  messages  Message[]
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String // "user" | "assistant"
+  content        String
+  // JSON array of { label, detail } — real sources the answer was drawn from, or [].
+  citations      String       @default("[]")
+  createdAt      DateTime     @default(now())
+}
+
+model Task {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title          String
+  // "summary" | "email_send" | "email_draft" | "calendar_create"
+  type           String
+  // JSON payload, e.g. { to, subject, body } or { start, end, title }.
+  payload        String    @default("{}")
+  status         String    @default("queued") // queued | running | paused | done | failed | cancelled
+  needsApproval  Boolean   @default(true)
+  approvalStatus String    @default("pending") // pending | approved | rejected | none
+  result         String?
+  error          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model MemoryEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String
+  source    String   @default("manual") // "manual" | "chat"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Reminder {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  dueAt     DateTime
+  done      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String // e.g. "task.approved", "email.sent", "account.connected"
+  detail    String   @default("")
+  createdAt DateTime @default(now())
+}
+
+model UserSettings {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timezone        String   @default("Asia/Karachi")
+  language        String   @default("en")
+  quietHoursStart String? // "22:00"
+  quietHoursEnd   String? // "07:00"
+  // JSON object of service -> boolean the user allows NOAH to use (FR-06 scope control).
+  // Keys: gmail, calendar, drive, docs, sheets.
+  scopes          String   @default("{\"gmail\":true,\"calendar\":true,\"drive\":true,\"docs\":true,\"sheets\":true}")
+  voiceEnabled    Boolean  @default(true)
+  updatedAt       DateTime @updatedAt
+}

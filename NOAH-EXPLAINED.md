@@ -77,7 +77,7 @@ Next.js app (one program: web pages + API)
 | Prisma | 6.14.0 | Talks to the database with typed queries + migrations |
 | SQLite (local) / Postgres (live) | — | SQLite file for development; Postgres for production on Vercel |
 | Tailwind CSS | 4.3.3 | Styling |
-| Google Gemini (`@google/generative-ai`) | 0.24.1 | The AI model that answers chats — model `gemini-2.5-flash`, free tier |
+| Google Gemini (`@google/generative-ai`) | 0.24.1 | The AI model that answers chats — model `gemini-3.8-flash`, free tier |
 | Google APIs (`googleapis`) | 190.0.0 | Real Gmail / Calendar / Drive calls |
 | bcryptjs | 3.0.3 | Password hashing (passwords are never stored in plain text) |
 | jose | 6.2.17 | JWT session tokens, stored in httpOnly cookies |

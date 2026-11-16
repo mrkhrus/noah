@@ -37,7 +37,7 @@ export async function generateChatReply(
   if (!geminiConfigured()) {
     throw new Error(geminiSetupMessage());
   }
-  const modelName = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+  const modelName = process.env.GEMINI_MODEL ?? "gemini-3.8-flash";
   const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
   const model = ai.getGenerativeModel({ model: modelName, systemInstruction: SYSTEM_PROMPT });
 
@@ -67,7 +67,7 @@ export async function generateChatReply(
 /** One-shot real summary (used by the "summary" task type). */
 export async function generateSummary(prompt: string): Promise<string> {
   if (!geminiConfigured()) throw new Error(geminiSetupMessage());
-  const modelName = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+  const modelName = process.env.GEMINI_MODEL ?? "gemini-3.8-flash";
   const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
   const model = ai.getGenerativeModel({ model: modelName });
   const result = await model.generateContent(prompt);

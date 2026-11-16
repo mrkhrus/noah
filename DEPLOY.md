@@ -34,7 +34,7 @@ actions; conversations and preferences persist).
 | `JWT_SECRET` | `openssl rand -base64 32` |
 | `ENCRYPTION_KEY` | `openssl rand -hex 32` (64 hex chars) — encrypts stored Google OAuth tokens |
 | `GEMINI_API_KEY` | Free key at https://aistudio.google.com/apikey |
-| `GEMINI_MODEL` | `gemini-2.5-flash` (default) |
+| `GEMINI_MODEL` | `gemini-3.8-flash` (default) |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google Cloud OAuth client (step 4) |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | Any SMTP server (e.g. Gmail app password, Resend, SendGrid). Without these, sign-up cannot send verification emails in production and returns an honest error. |
 | `CRON_SECRET` | `openssl rand -hex 16` — protects `/api/tasks/run` (Vercel Cron sends it automatically) |
